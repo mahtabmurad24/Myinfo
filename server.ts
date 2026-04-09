@@ -760,8 +760,23 @@ async function startServer() {
   }
 }
 
-export const appPromise = startServer();
+// For Vercel: Initialize app once and cache it
+let appPromise: Promise<Express.Application> | null = null;
+
+function initializeApp() {
+  if (!appPromise) {
+    appPromise = startServer();
+  }
+  return appPromise;
+}
+
+// Export handler for Vercel
 export default async (req: any, res: any) => {
-  const app = await appPromise;
-  return app(req, res);
+  try {
+    const app = await initializeApp();
+    app(req, res);
+  } catch (error: any) {
+    console.error("Error handling request:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
